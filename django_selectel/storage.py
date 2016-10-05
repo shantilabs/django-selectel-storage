@@ -107,7 +107,15 @@ class SelectelStorage(Storage):
         return datetime.fromtimestamp(float(self._get_headers(name)['x-timestamp']))  # noqa
 
     def url(self, name=''):
+        name = name.lstrip('/')
         return '{}/{}/{}'.format(self.storage_url, self.container_name, name)
+
+    def copy(self, src, dst):
+        r = self.sess.put(self.url(dst), headers={
+            'X-Auth-Token': self.token,
+            'X-Copy-From': '/{}/{}'.format(self.container_name, src.lstrip('/'))
+        })
+        assert r.status_code == 201, (r.status_code, r.content)
 
     def listdir(self, path='/'):
         logger.debug('listdir: %s', path)
