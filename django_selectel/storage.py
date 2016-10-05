@@ -111,11 +111,16 @@ class SelectelStorage(Storage):
         return '{}/{}/{}'.format(self.storage_url, self.container_name, name)
 
     def copy(self, src, dst):
+        logger.debug('copy: %s => %s', src, dst)
         r = self.sess.put(self.url(dst), headers={
             'X-Auth-Token': self.token,
             'X-Copy-From': '/{}/{}'.format(self.container_name, src.lstrip('/'))
         })
         assert r.status_code == 201, (r.status_code, r.content)
+
+    def move(self, src, dst):
+        self.copy(src, dst)
+        self.delete(src)
 
     def listdir(self, path='/'):
         logger.debug('listdir: %s', path)
