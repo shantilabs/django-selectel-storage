@@ -124,20 +124,21 @@ class SelectelStorage(Storage):
                 dirs.append(name)
         return dirs, files
 
-    def _listdir(self, path=''):
+    def _listdir(self, path='', limit=500):
         logger.debug('_listdir: %r', path)
-        marker = 0
+        marker = ''
         while True:
             found = False
             for d in self.sess.get(self.url(), params={
                 'path': path,
                 'format': 'json',
                 'marker': marker,
+                'limit': limit,
             }, headers={
                 'X-Auth-Token': self.token,
             }).json():
                 yield d
-                marker += 1
+                marker = d['name']
                 found = True
             if not found:
                 break
