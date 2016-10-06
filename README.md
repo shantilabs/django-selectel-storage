@@ -13,12 +13,20 @@ SELECTEL_USER = '12345'
 SELECTEL_KEY = '*****'
 
 # you should create this containers and allow access
-SELECTEL_STATIC_CONTAINER = 'mystatic'
 SELECTEL_BACKUP_CONTAINER = 'backup'
+SELECTEL_STATIC_CONTAINER = 'mystatic'
 
-# static
+# serve from cloud
+SELECTEL_STATIC_CONTAINER_URL = 'http://xxxxx.selcdn.ru/{}/'.format(SELECTEL_STATIC_CONTAINER)
+
+# OR from http CDN
+SELECTEL_STATIC_CONTAINER_URL = 'http://xxxxx.selcdn.com/{}/'.format(SELECTEL_STATIC_CONTAINER)
+
+# OR from https CDN
+SELECTEL_STATIC_CONTAINER_URL = 'https://customdomain-a.akamaihd.net/
+
+STATIC_URL = SELECTEL_STATIC_CONTAINER_URL
 STATICFILES_STORAGE = 'django_selectel.storage.StaticSelectelStorage'
-STATIC_URL = 'https://xxxxx.selcdn.ru/{}/'.format(SELECTEL_STATIC_CONTAINER)
 
 # django-compressor
 COMPRESS_STORAGE = STATICFILES_STORAGE
