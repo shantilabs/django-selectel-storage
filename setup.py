@@ -8,7 +8,7 @@ setup(
     author_email='maxim.oransky@gmail.com',
     url='https://github.com/shantilabs/django-selectel-storage',
     packages=[
-        'django_selectel'
-        'django_selectel.management.commands'
+        'django_selectel',
+        'django_selectel.management.commands',
     ],
 )
