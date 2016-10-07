@@ -56,9 +56,23 @@ class SelectelStorage(Storage):
         self._storage_url = r.headers['x-storage-url'].rstrip('/')
         self._token = r.headers['x-auth-token']
 
+    def _call(self, method, *args, **kwargs):
+        for attempt in range(10):
+            r = getattr(self.sess, method)(*args, **kwargs)
+            if r.status_code == 401:
+                self._lazy_init()
+                continue
+            elif r.status_code == 503:
+                logger.warn(r.content)
+                time.sleep(attempt + 1)
+                continue
+            break
+        assert r.status_code != 401
+        return r
+
     def _open(self, name, mode='rb'):
         logger.debug('_open(%s): %s', mode, name)
-        r = self.sess.get(self._url(name), headers={
+        r = self._call('get', self._url(name), headers={
             'X-Auth-Token': self.token,
         })
         if r.status_code == 404:
@@ -73,7 +87,7 @@ class SelectelStorage(Storage):
 
     def _save(self, name, content):
         logger.debug('_save: %s', name)
-        r = self.sess.put(self._url(name), data=content, headers={
+        r = self._call('put', self._url(name), data=content, headers={
             'X-Auth-Token': self.token,
         })
         assert r.status_code == 201
@@ -82,10 +96,15 @@ class SelectelStorage(Storage):
         return name
 
     def _get_headers(self, name):
-        r = self.sess.head(self._url(name), headers={
+        r = self._call('head', self._url(name), headers={
             'X-Auth-Token': self.token,
         })
-        return None if r.status_code == 404 else r.headers
+        if r.status_code == 404:
+            return None
+        elif r.status_code == 200:
+            return r.headers
+        else:
+            assert False, (r.status_code, r.content)
 
     def exists(self, name):
         if not self.use_cache:
@@ -119,7 +138,7 @@ class SelectelStorage(Storage):
 
     def copy(self, src, dst):
         logger.debug('copy: %s => %s', src, dst)
-        r = self.sess.put(self._url(dst), headers={
+        r = self._call('put', self._url(dst), headers={
             'X-Auth-Token': self.token,
             'X-Copy-From': '/{}/{}'.format(self.container_name, src.lstrip('/'))
         })
@@ -149,14 +168,15 @@ class SelectelStorage(Storage):
         marker = ''
         while True:
             found = False
-            for d in self.sess.get(self._url(), params={
+            r = self._call('get', self._url(), params={
                 'path': path,
                 'format': 'json',
                 'marker': marker,
                 'limit': limit,
             }, headers={
                 'X-Auth-Token': self.token,
-            }).json():
+            })
+            for d in r.json():
                 yield d
                 marker = d['name']
                 found = True
@@ -165,15 +185,9 @@ class SelectelStorage(Storage):
 
     def delete(self, name):
         logger.debug('delete: %s', name)
-        for attempt in range(10):
-            r = self.sess.delete(self._url(name), headers={
-                'X-Auth-Token': self.token,
-            })
-            if r.status_code == 503:
-                logger.warn(r.content)
-                time.sleep(attempt + 1)
-                continue
-            break
+        r = self._call('delete', self._url(name), headers={
+            'X-Auth-Token': self.token,
+        })
         if r.status_code == 404:
             pass
         else:
