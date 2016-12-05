@@ -59,7 +59,7 @@ class SelectelStorage(Storage):
     def _call(self, method, *args, **kwargs):
         for attempt in range(10):
             r = getattr(self.sess, method)(*args, **kwargs)
-            if r.status_code == 401:
+            if r.status_code in (401, 407):
                 self._lazy_init()
                 continue
             elif r.status_code == 503:
@@ -67,7 +67,7 @@ class SelectelStorage(Storage):
                 time.sleep(attempt + 1)
                 continue
             break
-        assert r.status_code != 401
+        assert r.status_code not in (401, 407), (r.status_code, r.content)
         return r
 
     def _open(self, name, mode='rb'):
