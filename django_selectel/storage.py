@@ -62,7 +62,7 @@ class SelectelStorage(Storage):
             if r.status_code in (401, 407):
                 self._lazy_init()
                 continue
-            elif r.status_code == 503:
+            elif r.status_code in (503, 500):
                 logger.warn(r.content)
                 time.sleep(attempt + 1)
                 continue
