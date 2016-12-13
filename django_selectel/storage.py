@@ -62,7 +62,7 @@ class SelectelStorage(Storage):
             if r.status_code in (401, 407):
                 self._lazy_init()
                 continue
-            elif r.status_code in (503, 500):
+            elif r.status_code in (503, 500, 507):
                 logger.warn(r.content)
                 time.sleep(attempt + 1)
                 continue
@@ -191,7 +191,7 @@ class SelectelStorage(Storage):
         if r.status_code == 404:
             pass
         else:
-            assert r.status_code == 204, (r.status_code, r.content)
+            assert r.status_code == 204, (r.status_code, r.content, name)
         if self.use_cache and name in self._files_cache:
             self._files_cache.remove(name)
 
