@@ -133,7 +133,7 @@ class SelectelStorage(Storage):
             return self._url(name)
 
     def _url(self, name=''):
-        name = name.lstrip('/')
+        name = name.replace('\\', '/').lstrip('/')
         return '{}/{}/{}'.format(self.storage_url, self.container_name, name)
 
     def copy(self, src, dst):
