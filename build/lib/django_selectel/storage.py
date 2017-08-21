@@ -13,7 +13,6 @@ from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import filepath_to_uri
 import requests
 
 
@@ -60,15 +59,15 @@ class SelectelStorage(Storage):
     def _call(self, method, *args, **kwargs):
         for attempt in range(10):
             r = getattr(self.sess, method)(*args, **kwargs)
-            if r.status_code in (401, 407):
+            if r.status_code == 401:
                 self._lazy_init()
                 continue
-            elif r.status_code in (503, 500, 507):
+            elif r.status_code == 503:
                 logger.warn(r.content)
                 time.sleep(attempt + 1)
                 continue
             break
-        assert r.status_code not in (401, 407), (r.status_code, r.content)
+        assert r.status_code != 401
         return r
 
     def _open(self, name, mode='rb'):
@@ -129,12 +128,12 @@ class SelectelStorage(Storage):
 
     def url(self, name=''):
         if self.container_url:
-            name = filepath_to_uri(name.lstrip('/'))
-            return '{}/{}'.format(self.container_url.rstrip('/'), name)
-        return self._url(name)
+            return self.container_url.rstrip('/') + '/' + name.lstrip('/')
+        else:
+            return self._url(name)
 
     def _url(self, name=''):
-        name = filepath_to_uri(name.lstrip('/'))
+        name = name.lstrip('/')
         return '{}/{}/{}'.format(self.storage_url, self.container_name, name)
 
     def copy(self, src, dst):
@@ -192,7 +191,7 @@ class SelectelStorage(Storage):
         if r.status_code == 404:
             pass
         else:
-            assert r.status_code == 204, (r.status_code, r.content, name)
+            assert r.status_code == 204, (r.status_code, r.content)
         if self.use_cache and name in self._files_cache:
             self._files_cache.remove(name)
 
